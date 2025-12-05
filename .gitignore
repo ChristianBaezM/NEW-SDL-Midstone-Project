@@ -3,7 +3,6 @@
 *.VC.db
 *.VC.opendb
 *.suo
-*.user
 *.ncb
 *.sdf
 *.ipch
