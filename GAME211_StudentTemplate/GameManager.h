@@ -28,16 +28,12 @@ private:
     class PlayerBody *player;
 
 	void handleEvents();
-	void LoadScene(int i);
 	bool ValidateCurrentScene();
-
-
 public:
 	GameManager();
 	~GameManager();
 	bool OnCreate();
 	void OnDestroy();
-
 
 	// These might be unfamiliar
 	float getSceneHeight();
@@ -46,9 +42,8 @@ public:
 	PlayerBody* getPlayerBody();
 	void RenderPlayer(float scale = 1.0f);
 	SDL_Renderer* getRenderer();
-
+	void LoadScene(int i);
 	void Run();
-    
 };
 #endif
 

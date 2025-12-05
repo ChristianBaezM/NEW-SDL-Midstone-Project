@@ -1,4 +1,4 @@
-#ifndef SCENE1_H
+﻿#ifndef SCENE1_H
 #define SCENE1_H
 
 #include <MMath.h>
@@ -23,6 +23,30 @@ private:
 	SDL_Rect carLaneBackgroundRect;
 	SDL_Texture* riverTexture = nullptr;
 	SDL_Rect riverBackgroundRect;
+
+	// Power‑ups
+	SDL_Texture* freezeTexture = nullptr;
+	SDL_Texture* extraLifeTexture = nullptr;
+	SDL_Rect freezeRect{};
+	SDL_Rect extraLifeRect{};
+	bool freezeActive = false;
+	bool extraLifeActive = false;
+
+	// Freeze effect
+	bool isFrozen = false;
+	float freezeTimer = 0.0f;
+	float freezeDuration = 3.0f; // seconds
+
+	// Lives
+	float heartScale = 0.05f;
+	int lives = 3;
+	SDL_Texture* heartTexture = nullptr;
+	SDL_Rect heartRects[3]; // fixed 3 hearts max
+
+	// Cooldown timers
+	float freezeCooldownTimer = 0.0f;
+	float extraLifeCooldownTimer = 0.0f;
+	const float POWERUP_COOLDOWN = 30.0f;  // 30 seconds
 public:
 	// This constructor may be different from what you've seen before
 	// Notice the second parameter, and look in GameManager.cpp
@@ -39,6 +63,8 @@ public:
 	SDL_Window* getWindow() { return window; }
     Matrix4 getProjectionMatrix() { return projectionMatrix; }
 	Matrix4 getInverseMatrix() { return inverseProjection; }
+	void spawnFreezePowerUp();
+	void spawnExtraLifePowerUp();
 };
 
 #endif

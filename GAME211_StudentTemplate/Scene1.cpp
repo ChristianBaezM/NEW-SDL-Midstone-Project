@@ -1,4 +1,4 @@
-#include "Scene1.h"
+﻿#include "Scene1.h"
 #include <VMath.h>
 #include "GridSettings.h"
 
@@ -16,7 +16,9 @@ Scene1::~Scene1() {
 }
 
 bool Scene1::OnCreate() {
-	int w, h;
+	srand(static_cast<unsigned>(time(NULL)));
+	int w;
+	int h;
 	SDL_GetWindowSize(window, &w, &h);
 
 	Matrix4 ndc = MMath::viewportNDC(w, h);
@@ -81,6 +83,7 @@ bool Scene1::OnCreate() {
 
 		cars.push_back(new Car(renderer, imagePath, 0, lane * CELL_SIZE, speed, moveRight, carScale));
 	}
+
 	// Logs
 	int logLanePositions[] = { 6, 5, 4, 3 };
 	int numLogs = 4;
@@ -94,6 +97,60 @@ bool Scene1::OnCreate() {
 		logs.push_back(new Log(renderer, "log.png", 0, lane * CELL_SIZE, speed, moveRight, logScale));
 	}
 
+	// Load power‑up textures
+	SDL_Surface* s = IMG_Load("freeze.png");
+	if (!s) { 
+		std::cout << "Failed freeze.png: " << IMG_GetError() << std::endl; 
+		return false; 
+	}
+	freezeTexture = SDL_CreateTextureFromSurface(renderer, s);
+	int freezeW = s->w;
+	int freezeH = s->h;
+	SDL_FreeSurface(s);
+
+	s = IMG_Load("extraLife.png");
+	if (!s) { 
+		std::cout << "Failed extraLife.png: " << IMG_GetError() << std::endl; 
+		return false;
+	}
+	extraLifeTexture = SDL_CreateTextureFromSurface(renderer, s);
+	int extraW = s->w;
+	int extraH = s->h;
+	SDL_FreeSurface(s);
+
+	// Hearts UI
+	s = IMG_Load("heart.png");
+	if (!s) { 
+		std::cout << "Failed heart.png: " << IMG_GetError() << std::endl; 
+		return false; 
+	}
+	heartTexture = SDL_CreateTextureFromSurface(renderer, s);
+	int heartW = s->w; 
+	int heartH = s->h;
+	SDL_FreeSurface(s);
+
+	// Arrange hearts top‑left
+	// Hearts UI - SCALED
+	if (heartTexture) {
+		int scaledHeartW = static_cast<int>(heartW * heartScale);
+		int scaledHeartH = static_cast<int>(heartH * heartScale);
+
+		int margin = 10;
+		for (int i = 0; i < 3; ++i) {
+			heartRects[i].x = margin + i * (scaledHeartW + 5);
+			heartRects[i].y = margin;
+			heartRects[i].w = scaledHeartW;
+			heartRects[i].h = scaledHeartH;
+		}
+	}
+
+	// Initial lives
+	lives = 3;
+
+	// Initial random spawn
+	spawnFreezePowerUp();
+	spawnExtraLifePowerUp();
+
 	return true;
 }
 
@@ -103,12 +160,26 @@ void Scene1::OnDestroy() {
 		SDL_DestroyTexture(backgroundTexture);
 		backgroundTexture = nullptr;
 	}
+
+	if (freezeTexture) {
+		SDL_DestroyTexture(freezeTexture);
+		freezeTexture = nullptr;
+	}
+	if (extraLifeTexture) {
+		SDL_DestroyTexture(extraLifeTexture);
+		extraLifeTexture = nullptr;
+	}
+	if (heartTexture) {
+		SDL_DestroyTexture(heartTexture);
+		heartTexture = nullptr;
+	}
+
 	if (riverTexture) {
 		SDL_DestroyTexture(riverTexture);
 		riverTexture = nullptr;
 	}
 
-	delete game->getPlayerBody();
+	/*delete game->getPlayerBody();*/
 
 	for (auto car : cars) {
 		delete car;
@@ -119,21 +190,35 @@ void Scene1::OnDestroy() {
 		delete log;
 	}
 	logs.clear();
+
+	// Reset for next game
+	lives = 3;
 }
 
 
 void Scene1::Update(const float deltaTime) {
 
+	// Freeze timer
+	if (isFrozen) {
+		freezeTimer -= deltaTime;
+		if (freezeTimer <= 0.0f) {
+			isFrozen = false;
+		}
+	}
+
 	// Update player
 	game->getPlayerBody()->Update(deltaTime);
 
-	// Update cars
-	for (auto& car : cars) {
-		car->Update(deltaTime, SCREEN_WIDTH);
-	}
-	// Update logs
-	for (auto& log : logs) {
-		log->Update(deltaTime, SCREEN_WIDTH);
+	// Cars + logs only update if not frozen
+	if (!isFrozen) {
+		// Update cars
+		for (auto& car : cars) {
+			car->Update(deltaTime, SCREEN_WIDTH);
+		}
+		// Update logs
+		for (auto& log : logs) {
+			log->Update(deltaTime, SCREEN_WIDTH);
+		}
 	}
 
 	// Check for collisions between player and cars
@@ -145,12 +230,58 @@ void Scene1::Update(const float deltaTime) {
 		SDL_Rect carRect = car->getRectScaled();
 
 		if (SDL_HasIntersection(&playerRect, &carRect)) {
+			if (lives > 0) {
+				lives--;
+			}
 			// Reset player to initial position - define as needed in game coords
 			Vec3 startPos = Vec3(12.5f, 0.5f, 0.0f);
 			game->getPlayerBody()->setPosition(startPos);
+			game->getPlayerBody()->setVel(Vec3(0, 0, 0));
 			break;
 		}
 	}
+
+	// Update power-up cooldown timers
+	if (freezeCooldownTimer > 0.0f) {
+		freezeCooldownTimer -= deltaTime;
+	}
+	if (extraLifeCooldownTimer > 0.0f) {
+		extraLifeCooldownTimer -= deltaTime;
+	}
+
+	// Freeze power‑up pickup
+	if (freezeActive) {
+		SDL_Rect freezeRectScreen = freezeRect;
+		if (SDL_HasIntersection(&playerRect, &freezeRectScreen)) {
+			isFrozen = true;
+			freezeTimer = freezeDuration;
+			freezeActive = false; // hide it until next spawn
+			freezeCooldownTimer = POWERUP_COOLDOWN;  // Start cooldown NOW
+		}
+	}
+
+	// Extra life pickup
+	if (extraLifeActive) {
+		SDL_Rect lifeRectScreen = extraLifeRect;
+		if (SDL_HasIntersection(&playerRect, &lifeRectScreen)) {
+			if (lives < 3) {
+				lives++;
+				extraLifeActive = false;
+				extraLifeCooldownTimer = POWERUP_COOLDOWN;  // Start cooldown NOW
+			}
+		}
+	}
+
+	// Respawn power‑ups cooldown
+	if (!freezeActive && freezeCooldownTimer <= 0.0f) {
+		spawnFreezePowerUp();
+		freezeCooldownTimer = POWERUP_COOLDOWN;  // Start 30s cooldown
+	}
+	if (!extraLifeActive && freezeCooldownTimer <= 0.0f) {
+		spawnExtraLifePowerUp();
+		extraLifeCooldownTimer = POWERUP_COOLDOWN;  // Start 30s cooldown
+	}
+
 	// Check for player interaction with logs and river
 	bool onLog = false;
 	for (auto log : logs) {
@@ -167,7 +298,51 @@ void Scene1::Update(const float deltaTime) {
 	if (!onLog && SDL_HasIntersection(&playerRect, &riverBackgroundRect)) {
 		Vec3 startPos = Vec3(12.5f, 0.5f, 0.0f);
 		game->getPlayerBody()->setPosition(startPos);
+		lives--;
 	}
+
+	// GAME OVER CHECK - NEW!
+	if (lives <= 0) {
+		if (game) {
+			game->LoadScene(0);
+		}
+		return;  // Exit Update immediately
+	}
+}
+
+void Scene1::spawnFreezePowerUp() {
+	// x full width, y between lane 3 and 11
+	int minYlane = 3;
+	int maxYlane = 11;
+	int minY = minYlane * CELL_SIZE;
+	int maxY = (maxYlane + 1) * CELL_SIZE - 32; // 32 padding
+
+	int minX = 0;
+	int maxX = SCREEN_WIDTH - 32;
+
+	freezeRect.w = 32;
+	freezeRect.h = 32;
+	freezeRect.x = rand() % (SCREEN_WIDTH - 32);
+	freezeRect.y = (rand() % 8 + 3) * CELL_SIZE;
+
+	freezeActive = true;
+}
+
+void Scene1::spawnExtraLifePowerUp() {
+	int minYlane = 3;
+	int maxYlane = 11;
+	int minY = minYlane * CELL_SIZE;
+	int maxY = (maxYlane + 1) * CELL_SIZE - 32;
+
+	int minX = 0;
+	int maxX = SCREEN_WIDTH - 32;
+
+	extraLifeRect.w = 32;
+	extraLifeRect.h = 32;
+	extraLifeRect.x = minX + rand() % (maxX - minX + 1);
+	extraLifeRect.y = minY + rand() % (maxY - minY + 1);
+
+	extraLifeActive = true;
 }
 
 void Scene1::Render() {
@@ -182,6 +357,21 @@ void Scene1::Render() {
 	// customized river rendering
 	if (riverTexture) {
 		SDL_RenderCopy(renderer, riverTexture, nullptr, &riverBackgroundRect);
+	}
+
+	// Power‑ups
+	if (freezeActive && freezeTexture) {
+		SDL_RenderCopy(renderer, freezeTexture, nullptr, &freezeRect);
+	}
+	if (extraLifeActive && extraLifeTexture) {
+		SDL_RenderCopy(renderer, extraLifeTexture, nullptr, &extraLifeRect);
+	}
+
+	// Hearts UI
+	if (heartTexture) {
+		for (int i = 0; i < lives; ++i) {
+			SDL_RenderCopy(renderer, heartTexture, nullptr, &heartRects[i]);
+		}
 	}
 
 	//below is the code to display the grid lines on screen. im still working on how to toggle it with a single button.

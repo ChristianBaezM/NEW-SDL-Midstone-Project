@@ -191,11 +191,17 @@ void GameManager::RenderPlayer(float scale)
 void GameManager::LoadScene( int i )
 {
     // cleanup of current scene before loading another one
-    currentScene->OnDestroy();
-    delete currentScene;
+    if (currentScene) {
+        currentScene->OnDestroy();
+        delete currentScene;
+        currentScene = nullptr;
+    }
 
     switch ( i )
     {
+        case 0: // menu
+            currentScene = new MenuScene(windowPtr->GetSDL_Window(), this);
+            break;
         case 1:
             currentScene = new Scene1( windowPtr->GetSDL_Window(), this);
             break;
@@ -204,7 +210,7 @@ void GameManager::LoadScene( int i )
             break;
     }
 
-    // using ValidateCurrentScene() to safely run OnCreate
+    // Validate and initialize new scene
     if (!ValidateCurrentScene())
     {
         isRunning = false;
