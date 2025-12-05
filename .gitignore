@@ -1,0 +1,22 @@
+# Visual Studio
+.vs/
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.ncb
+*.sdf
+*.ipch
+*.cache
+*.vsidx
+
+# Build results
+Debug/
+Release/
+x64/
+bin/
+obj/
+
+# Logs
+*.log
+GAME211_StudentTemplate/Debug/*
