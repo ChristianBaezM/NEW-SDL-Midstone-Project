@@ -15,7 +15,7 @@ private:
 	SDL_Window* window;		// an SDL window with a SDL renderer
 	SDL_Renderer* renderer;	// the renderer associated with SDL window
 	Matrix4 projectionMatrix;	// set in OnCreate()
-    Matrix4     inverseProjection;	// set in OnCreate()
+	Matrix4     inverseProjection;	// set in OnCreate()
 	bool showGrid;
 	std::vector <Car*> cars;
 	std::vector <Log*> logs;
@@ -47,6 +47,14 @@ private:
 	float freezeCooldownTimer = 0.0f;
 	float extraLifeCooldownTimer = 0.0f;
 	const float POWERUP_COOLDOWN = 30.0f;  // 30 seconds
+
+	// Timer
+	float countdownTime = 50.0f; // Start at 1 minute
+	SDL_Texture* digitsTexture = nullptr;
+	const int DIGIT_SRC_WIDTH = 153;
+	const int DIGIT_SRC_HEIGHT = 256;
+	const float TIMER_SCALE = 0.125f;
+
 public:
 	// This constructor may be different from what you've seen before
 	// Notice the second parameter, and look in GameManager.cpp
@@ -57,14 +65,15 @@ public:
 	void OnDestroy();
 	void Update(const float time);
 	void Render();
-    void HandleEvents(const SDL_Event &event);
+	void HandleEvents(const SDL_Event& event);
 	float getxAxis() { return xAxis; }
 	float getyAxis() { return yAxis; }
 	SDL_Window* getWindow() { return window; }
-    Matrix4 getProjectionMatrix() { return projectionMatrix; }
+	Matrix4 getProjectionMatrix() { return projectionMatrix; }
 	Matrix4 getInverseMatrix() { return inverseProjection; }
 	void spawnFreezePowerUp();
 	void spawnExtraLifePowerUp();
+	void RenderText(std::string text, int x, int y, float scale);
 };
 
 #endif

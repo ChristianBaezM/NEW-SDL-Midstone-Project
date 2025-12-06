@@ -16,7 +16,8 @@ bool PlayerBody::OnCreate()
         std::cerr << "Can't open the image" << std::endl;
         return false;
     }
-	pos = Vec3(12.5f, 0.5f, 0.0f);
+    pos = Vec3(12.5f, 0.5f, 0.0f);
+    collisionBoxScale = 0.5f;
     return true;
 }
 
@@ -107,15 +108,18 @@ SDL_Rect PlayerBody::getRect(float scale) const
 {
     SDL_Rect rect;
 
+    // Apply an additional scale factor for the collision box
+    float effectiveScale = scale * collisionBoxScale;
+
     // Calculate width and height scaled
-    int w = static_cast<int>(image->w * scale);
-    int h = static_cast<int>(image->h * scale);
+    int w = static_cast<int>(image->w * effectiveScale);
+    int h = static_cast<int>(image->h * effectiveScale * 0.6f); // Make the box 60% of the height
 
     // Convert game position to screen coordinates as in Render
     Vec3 screenCoords = game->getProjectionMatrix() * pos;
 
     rect.x = static_cast<int>(screenCoords.x - 0.5f * w);
-    rect.y = static_cast<int>(screenCoords.y - 0.5f * h);
+    rect.y = static_cast<int>(screenCoords.y - 0.5f * h + (0.2f * image->h * effectiveScale)); // Shift the box down
     rect.w = w;
     rect.h = h;
 

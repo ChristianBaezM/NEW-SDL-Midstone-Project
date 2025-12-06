@@ -1,6 +1,10 @@
 ﻿#include "Scene1.h"
 #include <VMath.h>
 #include "GridSettings.h"
+#include <string>
+#include <iomanip>
+#include <sstream>
+#include <iostream> // Make sure to include iostream for std::cout
 
 // See notes about this constructor in Scene1.h.
 Scene1::Scene1(SDL_Window* sdlWindow_, GameManager* game_) {
@@ -99,9 +103,9 @@ bool Scene1::OnCreate() {
 
 	// Load power‑up textures
 	SDL_Surface* s = IMG_Load("freeze.png");
-	if (!s) { 
-		std::cout << "Failed freeze.png: " << IMG_GetError() << std::endl; 
-		return false; 
+	if (!s) {
+		std::cout << "Failed freeze.png: " << IMG_GetError() << std::endl;
+		return false;
 	}
 	freezeTexture = SDL_CreateTextureFromSurface(renderer, s);
 	int freezeW = s->w;
@@ -109,8 +113,8 @@ bool Scene1::OnCreate() {
 	SDL_FreeSurface(s);
 
 	s = IMG_Load("extraLife.png");
-	if (!s) { 
-		std::cout << "Failed extraLife.png: " << IMG_GetError() << std::endl; 
+	if (!s) {
+		std::cout << "Failed extraLife.png: " << IMG_GetError() << std::endl;
 		return false;
 	}
 	extraLifeTexture = SDL_CreateTextureFromSurface(renderer, s);
@@ -120,13 +124,22 @@ bool Scene1::OnCreate() {
 
 	// Hearts UI
 	s = IMG_Load("heart.png");
-	if (!s) { 
-		std::cout << "Failed heart.png: " << IMG_GetError() << std::endl; 
-		return false; 
+	if (!s) {
+		std::cout << "Failed heart.png: " << IMG_GetError() << std::endl;
+		return false;
 	}
 	heartTexture = SDL_CreateTextureFromSurface(renderer, s);
-	int heartW = s->w; 
+	int heartW = s->w;
 	int heartH = s->h;
+	SDL_FreeSurface(s);
+
+	// Timer digits texture
+	s = IMG_Load("digits.png");
+	if (!s) {
+		std::cout << "Failed digits.png: " << IMG_GetError() << std::endl;
+		return false;
+	}
+	digitsTexture = SDL_CreateTextureFromSurface(renderer, s);
 	SDL_FreeSurface(s);
 
 	// Arrange hearts top‑left
@@ -146,6 +159,8 @@ bool Scene1::OnCreate() {
 
 	// Initial lives
 	lives = 3;
+	// Reset timer
+	countdownTime = 50.0f;
 
 	// Initial random spawn
 	spawnFreezePowerUp();
@@ -179,6 +194,11 @@ void Scene1::OnDestroy() {
 		riverTexture = nullptr;
 	}
 
+	if (digitsTexture) {
+		SDL_DestroyTexture(digitsTexture);
+		digitsTexture = nullptr;
+	}
+
 	/*delete game->getPlayerBody();*/
 
 	for (auto car : cars) {
@@ -197,7 +217,6 @@ void Scene1::OnDestroy() {
 
 
 void Scene1::Update(const float deltaTime) {
-
 	// Freeze timer
 	if (isFrozen) {
 		freezeTimer -= deltaTime;
@@ -209,8 +228,13 @@ void Scene1::Update(const float deltaTime) {
 	// Update player
 	game->getPlayerBody()->Update(deltaTime);
 
-	// Cars + logs only update if not frozen
+	// Cars, logs, and countdown only update if not frozen
 	if (!isFrozen) {
+		// Update countdown timer
+		if (countdownTime > 0.0f) {
+			countdownTime -= deltaTime;
+		}
+
 		// Update cars
 		for (auto& car : cars) {
 			car->Update(deltaTime, SCREEN_WIDTH);
@@ -288,9 +312,13 @@ void Scene1::Update(const float deltaTime) {
 		SDL_Rect logRect = log->getRectScaled();
 		if (SDL_HasIntersection(&playerRect, &logRect)) {
 			onLog = true;
-			Vec3 playerPos = game->getPlayerBody()->getPos();
-			playerPos.x += log->getSpeed() * deltaTime / CELL_SIZE; // Adjust for grid coordinates
-			game->getPlayerBody()->setPosition(playerPos);
+			if (!isFrozen) {
+				Vec3 playerPos = game->getPlayerBody()->getPos();
+				// The log's speed is in pixels per second. We need to convert it to grid units per second.
+				float speedInGridUnits = log->getSpeed() / CELL_SIZE;
+				playerPos.x += speedInGridUnits * deltaTime;
+				game->getPlayerBody()->setPosition(playerPos);
+			}
 			break;
 		}
 	}
@@ -301,8 +329,8 @@ void Scene1::Update(const float deltaTime) {
 		lives--;
 	}
 
-	// GAME OVER CHECK - NEW!
-	if (lives <= 0) {
+	// GAME OVER CHECK
+	if (lives <= 0 || countdownTime <= 0.0f) {
 		if (game) {
 			game->LoadScene(0);
 		}
@@ -345,8 +373,36 @@ void Scene1::spawnExtraLifePowerUp() {
 	extraLifeActive = true;
 }
 
+void Scene1::RenderText(std::string text, int x, int y, float scale) {
+	if (!digitsTexture) return;
+
+	// This string MUST match the order of characters in your digits.png file
+	const std::string charMap = "0123456789.:"; // Added colon for timer display
+
+	int currentX = x;
+	int scaledWidth = static_cast<int>(DIGIT_SRC_WIDTH * scale);
+	int scaledHeight = static_cast<int>(DIGIT_SRC_HEIGHT * scale);
+
+	for (char const& c : text) {
+		size_t charIndex = charMap.find(c);
+
+		if (charIndex != std::string::npos) { // Check if the character was found
+			SDL_Rect srcRect;
+			srcRect.x = static_cast<int>(charIndex) * DIGIT_SRC_WIDTH;
+			srcRect.y = 0;
+			srcRect.w = DIGIT_SRC_WIDTH;
+			srcRect.h = DIGIT_SRC_HEIGHT;
+
+			SDL_Rect destRect = { currentX, y, scaledWidth, scaledHeight };
+			SDL_RenderCopy(renderer, digitsTexture, &srcRect, &destRect);
+		}
+
+		currentX += scaledWidth; // Move to the next position
+	}
+}
+
 void Scene1::Render() {
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+	SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255); // Green for grass
 	SDL_RenderClear(renderer);
 
 	// customized road rendering
@@ -373,6 +429,26 @@ void Scene1::Render() {
 			SDL_RenderCopy(renderer, heartTexture, nullptr, &heartRects[i]);
 		}
 	}
+
+	// Render Timer
+	int minutes = static_cast<int>(countdownTime) / 60;
+	int seconds = static_cast<int>(countdownTime) % 60;
+	if (countdownTime < 0) { // Prevent negative display
+		minutes = 0;
+		seconds = 0;
+	}
+
+	std::stringstream ss;
+	ss << minutes << ":" << std::setw(2) << std::setfill('0') << seconds;
+	std::string timeStr = ss.str();
+
+	// Calculate total width of the timer string to right-align it
+	int totalWidth = static_cast<int>(timeStr.length() * (DIGIT_SRC_WIDTH * TIMER_SCALE));
+	int xPos = SCREEN_WIDTH - totalWidth - 10; // 10 pixels margin
+	int yPos = 10;
+
+	RenderText(timeStr, xPos, yPos, TIMER_SCALE);
+
 
 	//below is the code to display the grid lines on screen. im still working on how to toggle it with a single button.
 	SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255); // gray lines

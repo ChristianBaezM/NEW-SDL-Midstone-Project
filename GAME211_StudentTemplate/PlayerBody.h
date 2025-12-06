@@ -16,11 +16,13 @@ class PlayerBody : public Body
 {
 protected:
     class GameManager* game;
+    float collisionBoxScale;
 
 public:
     PlayerBody() : Body{}
     {
         game = nullptr;
+        collisionBoxScale = 1.0f;
     }
 
     // Note the last parameter in this constructor!
