@@ -2,25 +2,31 @@
 #define MENUSCENE_H
 
 #include "Scene.h"
-//#include <SDL_mixer.h>
+#include <SDL_mixer.h>
 
 class MenuScene : public Scene {
 private:
+	GameManager* gameManager;
+
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 
 	SDL_Texture* bgTexture;
 	SDL_Texture* playTexture;
 	SDL_Texture* quitTexture;
+	SDL_Texture* optionTexture;
 
 	SDL_Rect playRect;
 	SDL_Rect quitRect;
+	SDL_Rect optionRect;
 
 	bool startGame = false;
 	bool quitGame = false;
+	bool gameOption = false;
 
 	bool hoverPlay = false;
 	bool hoverQuit = false;
+	bool hoverOption = false;
 
 	float fadeAlpha = 0.0f;
 	enum class MenuState { Normal, FadingToGame, FadingToQuit };
@@ -28,11 +34,7 @@ private:
 
 
 
-	/*Mix_Chunk* hoverSound = nullptr;
-	Mix_Chunk* clickSound = nullptr;*/
-
-	/*bool prevHoverPlay = false;
-	bool prevHoverQuit = false;*/
+	
 
 
 public:
@@ -53,6 +55,7 @@ public:
 
 	bool ShouldStartGame() const { return startGame; }
 	bool ShouldQuitGame() const { return quitGame; }
+	bool ShouldOpenOptions() const { return gameOption; }
 };
 
 

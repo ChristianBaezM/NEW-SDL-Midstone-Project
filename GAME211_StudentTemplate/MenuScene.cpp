@@ -1,13 +1,15 @@
 #include "MenuScene.h"
+#include "GameManager.h"
 #include <SDL_image.h>
 
 MenuScene::MenuScene(SDL_Window* sdlWindow, GameManager* game_) {
 	window = sdlWindow;
-	game = game_;
+	gameManager = game_;
 	renderer = SDL_GetRenderer(window);
 
 	bgTexture = nullptr;
 	playTexture = nullptr;
+	
 
 	playRect = { 0, 0, 0, 0 };
 }
@@ -15,18 +17,12 @@ MenuScene::MenuScene(SDL_Window* sdlWindow, GameManager* game_) {
 MenuScene::~MenuScene() {}
 
 bool MenuScene::OnCreate() {
-	/*if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-		SDL_Log("SDL_mixer could not initialize! %s", Mix_GetError());
-	}
-
-	hoverSound = Mix_LoadWAV("audio/hover.wav");
-	clickSound = Mix_LoadWAV("audio/click.wav");*/
-
+	
 
 	int w, h;
 	SDL_GetWindowSize(window, &w, &h);
 
-	SDL_Surface* bgSurf = IMG_Load("SLyRaccoonMainMenu.png");
+	SDL_Surface* bgSurf = IMG_Load("SlyRaccoonMainMenu.png");
 	if (!bgSurf) return false;
 	bgTexture = SDL_CreateTextureFromSurface(renderer, bgSurf);
 	SDL_FreeSurface(bgSurf);
@@ -45,12 +41,18 @@ bool MenuScene::OnCreate() {
 	SDL_FreeSurface(quitSurf);
 	if (!quitTexture) return false;
 
+	SDL_Surface* optionSurf = IMG_Load("OptionButton.png");
+	if (!optionSurf) return false;
+	optionTexture = SDL_CreateTextureFromSurface(renderer, optionSurf);
+	SDL_FreeSurface(optionSurf);
+	if (!optionTexture) return false;
+
 
 	int bw, bh;
 	SDL_QueryTexture(playTexture, nullptr, nullptr, &bw, &bh);
 
-	playRect.w = bw;
-	playRect.h = bh;
+	playRect.w = bw * 1.5;
+	playRect.h = bh * 1.5;
 	playRect.x = w / 2 - bw / 2;
 	playRect.y = h * 2 / 3 - bh / 2;
 
@@ -58,10 +60,18 @@ bool MenuScene::OnCreate() {
 	int qw, qh;
 	SDL_QueryTexture(quitTexture, nullptr, nullptr, &qw, &qh);
 
-	quitRect.w = qw;
-	quitRect.h = qh;
+	quitRect.w = qw * 1.5;
+	quitRect.h = qh * 1.5;
 	quitRect.x = w / 2 - qw / 2;
 	quitRect.y = playRect.y + playRect.h + 20;
+
+	int ow, oh;
+	SDL_QueryTexture(optionTexture, nullptr, nullptr, &ow, &oh);
+
+	optionRect.w = ow * 1.5;
+	optionRect.h = oh * 1.5;
+	optionRect.x = w / 2 - ow / 2;
+	optionRect.y = quitRect.y + quitRect.h + 20;
 
 	return true;
 }
@@ -71,11 +81,9 @@ void MenuScene::OnDestroy() {
 	if (bgTexture) SDL_DestroyTexture(bgTexture);
 	if (playTexture) SDL_DestroyTexture(playTexture);
 	if (quitTexture) SDL_DestroyTexture(quitTexture);
+	if (optionTexture) SDL_DestroyTexture(optionTexture);
 
-	/*if (hoverSound) Mix_FreeChunk(hoverSound);
-	if (clickSound) Mix_FreeChunk(clickSound);
-
-	Mix_CloseAudio();*/
+	
 }
 
 void MenuScene::Update(const float deltaTime) {
@@ -120,6 +128,7 @@ void MenuScene::Render() {
 
 	drawButton(playTexture, playRect, hoverPlay);
 	drawButton(quitTexture, quitRect, hoverQuit);
+	drawButton(optionTexture, optionRect, hoverOption);
 
 	if (fadeAlpha > 0.0f) {
 		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -128,6 +137,8 @@ void MenuScene::Render() {
 		SDL_Rect full = { 0, 0, w, h };
 		SDL_RenderFillRect(renderer, &full);
 	}
+
+	
 
 	SDL_RenderPresent(renderer);
 
@@ -141,17 +152,13 @@ void MenuScene::HandleEvents(const SDL_Event& event) {
 		int my = event.motion.y;
 
 		hoverPlay = (mx >= playRect.x && mx <= playRect.x + playRect.w && my >= playRect.y && my <= playRect.y + playRect.h);
-		/*if (hoverPlay && !prevHoverPlay && hoverSound) {
-			Mix_PlayChannel(-1, hoverSound, 0);
-		}*/
+		
 
 		hoverQuit = (mx >= quitRect.x && mx <= quitRect.x + quitRect.w && my >= quitRect.y && my <= quitRect.y + quitRect.h);
-		/*if (hoverQuit && !prevHoverQuit && hoverSound) {
-			Mix_PlayChannel(-1, hoverSound, 0);
-		}*/
+		
 
-		/*prevHoverPlay = hoverPlay;
-		prevHoverQuit = hoverQuit;*/
+		hoverOption = (mx >= optionRect.x && mx <= optionRect.x + optionRect.w && my >= optionRect.y && my <= optionRect.y + optionRect.h);
+		
 	}
 
 	if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT && state == MenuState::Normal) {
@@ -159,16 +166,23 @@ void MenuScene::HandleEvents(const SDL_Event& event) {
 		int my = event.button.y;
 
 		if (mx >= playRect.x && mx <= playRect.x + playRect.w && my >= playRect.y && my <= playRect.y + playRect.h) {
-			/*if (clickSound) Mix_PlayChannel(-1, clickSound, 0);*/
+			
+			gameManager->PlayButtonSfx();
 			state = MenuState::FadingToGame;
 		}
 
-
-
-
 		if (mx >= quitRect.x && mx <= quitRect.x + quitRect.w && my >= quitRect.y && my <= quitRect.y + quitRect.h) {
-			/*if (clickSound) Mix_PlayChannel(-1, clickSound, 0);*/
+			
+			gameManager->PlayButtonSfx();
 			state = MenuState::FadingToQuit;
 		}
+
+		if (mx >= optionRect.x && mx <= optionRect.x + optionRect.w && my >= optionRect.y && my <= optionRect.y + optionRect.h) {
+			gameManager->PlayButtonSfx();
+			gameOption = true;
+		}
 	}
+
+	
+
 }

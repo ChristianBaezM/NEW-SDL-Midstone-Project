@@ -6,6 +6,7 @@
 #include "Timer.h"
 #include "Scene.h"
 #include "PlayerBody.h"
+#include <SDL_mixer.h>
 
 
 class GameManager {
@@ -29,6 +30,15 @@ private:
 
 	void handleEvents();
 	bool ValidateCurrentScene();
+
+	Mix_Music* bgMusic = nullptr;
+	int musicVolume = MIX_MAX_VOLUME / 2;
+
+	Mix_Chunk* buttonSfx = nullptr;
+	Mix_Chunk* backSfx = nullptr;
+	Mix_Chunk* hitSfx = nullptr;
+	int sfxVolume = MIX_MAX_VOLUME;
+
 public:
 	GameManager();
 	~GameManager();
@@ -44,6 +54,17 @@ public:
 	SDL_Renderer* getRenderer();
 	void LoadScene(int i);
 	void Run();
+    
+	void SetMusicVolume(int volume);
+	int GetMusicVolume() const;
+
+	void SetSfxVolume(int volume);
+	int GetSfxVolume() const { return sfxVolume; }
+
+	void PlayButtonSfx();
+	void PlayBackSfx();
+	void PlayHitSfx();
+
 };
 #endif
 
