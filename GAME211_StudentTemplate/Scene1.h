@@ -10,6 +10,8 @@
 using namespace MATH;
 class Scene1 : public Scene {
 private:
+	
+
 	float xAxis;	// scene width, in game coords, set in constructor
 	float yAxis;	// scene height, in game coords, set in constructor
 	SDL_Window* window;		// an SDL window with a SDL renderer

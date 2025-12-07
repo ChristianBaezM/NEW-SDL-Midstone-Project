@@ -146,6 +146,7 @@ void Scene1::Update(const float deltaTime) {
 
 		if (SDL_HasIntersection(&playerRect, &carRect)) {
 			// Reset player to initial position - define as needed in game coords
+			game->PlayHitSfx();
 			Vec3 startPos = Vec3(12.5f, 0.5f, 0.0f);
 			game->getPlayerBody()->setPosition(startPos);
 			break;
@@ -165,6 +166,7 @@ void Scene1::Update(const float deltaTime) {
 	}
 
 	if (!onLog && SDL_HasIntersection(&playerRect, &riverBackgroundRect)) {
+		game->PlayHitSfx();
 		Vec3 startPos = Vec3(12.5f, 0.5f, 0.0f);
 		game->getPlayerBody()->setPosition(startPos);
 	}

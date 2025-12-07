@@ -1,5 +1,6 @@
 #include "GameManager.h"
 #include "MenuScene.h"
+#include "OptionScene.h"
 #include "Scene1.h"
 #include "GridSettings.h" // you added this
 
@@ -77,6 +78,41 @@ bool GameManager::OnCreate() {
         OnDestroy();
         return false;
     }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        SDL_Log("SDL_mixer could not initialize! %s", Mix_GetError());
+        return false;
+    }
+
+    bgMusic = Mix_LoadMUS("song8.mp3");
+    if (!bgMusic) {
+        SDL_Log("Failed to load music: %s", Mix_GetError());
+    }
+    else {
+        Mix_VolumeMusic(musicVolume);
+        Mix_PlayMusic(bgMusic, -1);
+    }
+
+    buttonSfx = Mix_LoadWAV("menu change.wav");
+    if (!buttonSfx) {
+        SDL_Log("Failed to load menu change.wav", Mix_GetError());
+        return false;
+    }
+
+    backSfx = Mix_LoadWAV("back.wav");
+    if (!backSfx) {
+        SDL_Log("Failed to load back.wav", Mix_GetError());
+        return false;
+    }
+
+    hitSfx = Mix_LoadWAV("enemy bump.wav");
+    if (!hitSfx) {
+        SDL_Log("Failed to load enemy bump.wav", Mix_GetError());
+        return false;
+    }
+
+    SetSfxVolume(sfxVolume);
+
            
 	return true;
 }
@@ -146,6 +182,16 @@ void GameManager::handleEvents()
                 isRunning = false;
                 return;
             }
+            if (menu->ShouldOpenOptions()) {
+                LoadScene(2);
+                return;
+            }
+        }
+        if (auto* opt = dynamic_cast<OptionScene*>(currentScene)) {
+            if (opt->ShouldReturnToMenu()) {
+                LoadScene(0);
+                return;
+            }
         }
     }
 }
@@ -156,6 +202,19 @@ void GameManager::OnDestroy(){
 	if (windowPtr) delete windowPtr;
 	if (timer) delete timer;
 	if (currentScene) delete currentScene;
+
+    if (buttonSfx) { Mix_FreeChunk(buttonSfx); buttonSfx = nullptr; }
+    if (backSfx) { Mix_FreeChunk(backSfx); backSfx = nullptr; }
+    if (hitSfx) { Mix_FreeChunk(hitSfx); hitSfx = nullptr; }
+
+    if (bgMusic) {
+        Mix_HaltMusic();
+        Mix_FreeMusic(bgMusic);
+        bgMusic = nullptr;
+
+    }
+
+    Mix_CloseAudio();
 }
 
 // This might be unfamiliar
@@ -191,21 +250,27 @@ void GameManager::RenderPlayer(float scale)
 void GameManager::LoadScene( int i )
 {
     // cleanup of current scene before loading another one
-    currentScene->OnDestroy();
-    delete currentScene;
-
+    if (currentScene) {
+        currentScene->OnDestroy();
+        delete currentScene;
+        currentScene = nullptr;
+    }
+   
     switch ( i )
     {
-        case 1:
-            currentScene = new Scene1( windowPtr->GetSDL_Window(), this);
-            break;
-        default:
-            currentScene = new Scene1( windowPtr->GetSDL_Window(), this );
-            break;
+    case 0:
+        currentScene = new MenuScene(windowPtr->GetSDL_Window(), this);
+        break;
+    case 1:
+        currentScene = new Scene1( windowPtr->GetSDL_Window(), this);
+        break;
+    case 2:
+        currentScene = new OptionScene(windowPtr->GetSDL_Window(), this);
+        break;
     }
 
     // using ValidateCurrentScene() to safely run OnCreate
-    if (!ValidateCurrentScene())
+    if (!currentScene || !currentScene->OnCreate())
     {
         isRunning = false;
     }
@@ -220,4 +285,41 @@ bool GameManager::ValidateCurrentScene()
         return false;
     }
     return true;
+}
+
+void GameManager::SetMusicVolume(int volume) {
+    if (volume < 0) volume = 0;
+    if (volume > MIX_MAX_VOLUME) volume = MIX_MAX_VOLUME;
+    musicVolume = volume;
+    Mix_VolumeMusic(volume);
+}
+
+int GameManager::GetMusicVolume() const {
+    return musicVolume;
+}
+
+
+void GameManager::SetSfxVolume(int vol) {
+    if (vol < 0) vol = 0;
+    if (vol > MIX_MAX_VOLUME) vol = MIX_MAX_VOLUME;
+    sfxVolume = vol;
+
+    if (buttonSfx) { Mix_VolumeChunk(buttonSfx, sfxVolume); }
+    if (backSfx) { Mix_VolumeChunk(backSfx, sfxVolume); }
+    if (hitSfx) { Mix_VolumeChunk(hitSfx, sfxVolume); }
+}
+
+
+
+
+void GameManager::PlayButtonSfx() {
+    if (buttonSfx) Mix_PlayChannel(-1, buttonSfx, 0);
+}
+
+void GameManager::PlayBackSfx() {
+    if (backSfx) Mix_PlayChannel(-1, backSfx, 0);
+}
+
+void GameManager::PlayHitSfx() {
+    if (hitSfx) Mix_PlayChannel(-1, hitSfx, 0);
 }
