@@ -128,8 +128,25 @@ void GameManager::Run() {
         
         handleEvents();
 		timer->UpdateFrameTicks();
-        currentScene->Update(timer->GetDeltaTime());
-		currentScene->Render();
+        
+        // Scene update
+        if (currentScene) {
+            currentScene->Update(timer->GetDeltaTime());
+        }
+
+        // Defer any pending scene change until Update has returned
+        if (pendingScene != -1) {
+            int sceneToLoad = pendingScene;
+            pendingScene = -1;
+            LoadScene(sceneToLoad);
+            // After swapping scenes, continue to next loop iteration (to avoid using deleted resources)
+            continue;
+        }
+
+        // Render only if there's a current scene (and no immediate scene swap pending)
+        if (currentScene) {
+            currentScene->Render();
+        }
 
 		/// Keep the event loop running at a proper rate
 		SDL_Delay(timer->GetSleepTime(60)); ///60 frames per sec
@@ -212,7 +229,6 @@ void GameManager::OnDestroy(){
         Mix_HaltMusic();
         Mix_FreeMusic(bgMusic);
         bgMusic = nullptr;
-
     }
 
     Mix_CloseAudio();
@@ -245,12 +261,10 @@ SDL_Renderer* GameManager::getRenderer()
 void GameManager::collectApple()
 {
     applesCollected++;
-    if (applesCollected >= 5) {
+    if (applesCollected == 5) {
         std::cout << "YOU WIN";
-        LoadScene(3);
-
+        RequestLoadScene(3);
     }
-
 }
 
 // This might be unfamiliar
@@ -323,9 +337,6 @@ void GameManager::SetSfxVolume(int vol) {
     if (backSfx) { Mix_VolumeChunk(backSfx, sfxVolume); }
     if (hitSfx) { Mix_VolumeChunk(hitSfx, sfxVolume); }
 }
-
-
-
 
 void GameManager::PlayButtonSfx() {
     if (buttonSfx) Mix_PlayChannel(-1, buttonSfx, 0);

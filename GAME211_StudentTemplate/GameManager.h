@@ -40,6 +40,9 @@ private:
 	Mix_Chunk* hitSfx = nullptr;
 	int sfxVolume = MIX_MAX_VOLUME;
 
+	// pending scene change (deferred until safe time)
+	int pendingScene = -1;
+
 public:
 	GameManager();
 	~GameManager();
@@ -56,6 +59,9 @@ public:
 	void collectApple();
 	void LoadScene(int i);
 	void Run();
+
+	// request a scene change (does not delete currentScene immediately)
+	void RequestLoadScene(int i) { pendingScene = i; }
     
 	void SetMusicVolume(int volume);
 	int GetMusicVolume() const;

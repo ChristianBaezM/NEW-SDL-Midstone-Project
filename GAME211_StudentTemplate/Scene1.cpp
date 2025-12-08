@@ -464,14 +464,6 @@ void Scene1::Render() {
 		SDL_RenderCopy(renderer, riverTexture, nullptr, &riverBackgroundRect);
 	}
 
-	// Power‑ups
-	if (freezeActive && freezeTexture) {
-		SDL_RenderCopy(renderer, freezeTexture, nullptr, &freezeRect);
-	}
-	if (extraLifeActive && extraLifeTexture) {
-		SDL_RenderCopy(renderer, extraLifeTexture, nullptr, &extraLifeRect);
-	}
-
 	// Hearts UI
 	if (heartTexture) {
 		for (int i = 0; i < lives; ++i) {
@@ -522,6 +514,14 @@ void Scene1::Render() {
 	// Render logs
 	for (auto log : logs) {
 		log->Render(renderer);
+	}
+
+	// Power‑ups
+	if (freezeActive && freezeTexture) {
+		SDL_RenderCopy(renderer, freezeTexture, nullptr, &freezeRect);
+	}
+	if (extraLifeActive && extraLifeTexture) {
+		SDL_RenderCopy(renderer, extraLifeTexture, nullptr, &extraLifeRect);
 	}
 
 	apple->render(renderer);
