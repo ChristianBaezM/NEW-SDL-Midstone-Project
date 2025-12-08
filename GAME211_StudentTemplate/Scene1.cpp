@@ -175,7 +175,7 @@ bool Scene1::OnCreate() {
 	// Initial lives
 	lives = 3;
 	// Reset timer
-	countdownTime = 120.0f;
+	countdownTime = 1200.0f;
 
 	// Initial random spawn
 	spawnFreezePowerUp();

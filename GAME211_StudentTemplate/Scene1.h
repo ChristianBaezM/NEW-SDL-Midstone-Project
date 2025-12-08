@@ -56,7 +56,7 @@ private:
 	const float POWERUP_COOLDOWN = 30.0f;  // 30 seconds
 
 	// Timer
-	float countdownTime = 50.0f; // Start at 1 minute
+	float countdownTime = 1000.0f; // Start at 1 minute
 	SDL_Texture* digitsTexture = nullptr;
 	const int DIGIT_SRC_WIDTH = 153;
 	const int DIGIT_SRC_HEIGHT = 256;

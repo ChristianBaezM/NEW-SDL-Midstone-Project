@@ -1,4 +1,6 @@
 #include "WinScene.h"
+#include "GameManager.h"
+#include <SDL_image.h>
 
 WinScene::WinScene(SDL_Window* win, GameManager* gm)
 {
