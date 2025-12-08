@@ -21,10 +21,12 @@
   <ItemGroup>
     <ClCompile Include="Body.cpp" />
     <ClCompile Include="Car.cpp" />
+    <ClCompile Include="Food.cpp" />
     <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MenuScene.cpp" />
+    <ClCompile Include="Nest.cpp" />
     <ClCompile Include="OptionScene.cpp" />
     <ClCompile Include="PlayerBody.cpp" />
     <ClCompile Include="Scene1.cpp" />
@@ -34,10 +36,12 @@
   <ItemGroup>
     <ClInclude Include="Body.h" />
     <ClInclude Include="Car.h" />
+    <ClInclude Include="Food.h" />
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="GridSettings.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="MenuScene.h" />
+    <ClInclude Include="Nest.h" />
     <ClInclude Include="OptionScene.h" />
     <ClInclude Include="PlayerBody.h" />
     <ClInclude Include="Scene.h" />

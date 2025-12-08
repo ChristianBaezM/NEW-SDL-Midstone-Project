@@ -6,6 +6,8 @@
 #include "Scene.h"
 #include "Car.h"
 #include "Log.h"
+#include "Food.h"
+#include "Nest.h"
 
 using namespace MATH;
 class Scene1 : public Scene {
@@ -21,6 +23,9 @@ private:
 	bool showGrid;
 	std::vector <Car*> cars;
 	std::vector <Log*> logs;
+	Food* apple;
+	std::vector <Nest*> nests;
+	int numberOfNests = 5;
 	SDL_Texture* backgroundTexture = nullptr;
 	SDL_Rect carLaneBackgroundRect;
 	SDL_Texture* riverTexture = nullptr;
@@ -76,6 +81,7 @@ public:
 	void spawnFreezePowerUp();
 	void spawnExtraLifePowerUp();
 	void RenderText(std::string text, int x, int y, float scale);
+	void spawnFood();
 };
 
 #endif

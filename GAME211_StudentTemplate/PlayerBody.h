@@ -14,6 +14,9 @@
 
 class PlayerBody : public Body
 {
+private:
+    bool hasCollected = false;
+
 protected:
     class GameManager* game;
     float collisionBoxScale;
@@ -58,6 +61,13 @@ public:
     SDL_Rect getRect(float scale = 1.0f) const;
     void setPosition(const Vec3& newPos);
     virtual void setVel(const Vec3& newVel) { vel = newVel; }
+    void setHasCollected(bool hasCollected_)
+    {
+        hasCollected = hasCollected_;
+    }
+    bool getHasCollected() {
+        return hasCollected;
+    }
 };
 
 #endif /* PLAYERBODY_H */

@@ -24,6 +24,7 @@ private:
 	class Timer *timer;
 	bool isRunning;
 	class Scene *currentScene;
+	int applesCollected = 0;
 
 	// This might be unfamiliar
     class PlayerBody *player;
@@ -52,6 +53,7 @@ public:
 	PlayerBody* getPlayerBody();
 	void RenderPlayer(float scale = 1.0f);
 	SDL_Renderer* getRenderer();
+	void collectApple();
 	void LoadScene(int i);
 	void Run();
     

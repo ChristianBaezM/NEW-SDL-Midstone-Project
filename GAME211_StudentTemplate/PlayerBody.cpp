@@ -16,7 +16,7 @@ bool PlayerBody::OnCreate()
         std::cerr << "Can't open the image" << std::endl;
         return false;
     }
-    pos = Vec3(12.5f, 0.5f, 0.0f);
+    pos = Vec3(11.6f, 0.5f, 0.0f);
     collisionBoxScale = 0.5f;
     return true;
 }
@@ -57,23 +57,37 @@ void PlayerBody::Render( float scale )
 
 // As of now this is how im getting sly to move, but we need to figure out how to move him in between each space.
 void PlayerBody::HandleEvents(const SDL_Event& event) {
-    float maxSpeed = 2.5f;
     if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
-        float maxSpeed = 2.5f;
-            switch (event.key.keysym.scancode) {
-                case SDL_SCANCODE_W:
-                    vel.y = maxSpeed * 1.0f;
-                    break;
-                case SDL_SCANCODE_A:
-                    vel.x = maxSpeed * -1.0f;
-                    break;
-                case SDL_SCANCODE_S:
-                    vel.y = maxSpeed * -1.0f;
-                    break;
-                case SDL_SCANCODE_D:
-                    vel.x = maxSpeed * 1.0f;
-                    break;
+        switch (event.key.keysym.scancode) {
+        case SDL_SCANCODE_W:
+            pos.y += 1.15;
+            if (pos.y > 14.4f)
+            {
+                pos.y = 14.4f; //this seems to work!
             }
+            break;
+        case SDL_SCANCODE_A:
+            pos.x -= 1.79;
+            if (pos.x < 0.9f)
+            {
+                pos.x = 0.9; //this seems to work!
+            }
+            break;
+        case SDL_SCANCODE_S:
+            pos.y -= 1.15;
+            if (pos.y < 0.6f)
+            {
+                pos.y = 0.6f; //this seems to work!
+            }
+            break;
+        case SDL_SCANCODE_D:
+            pos.x += 1.79;
+            if (pos.x > 24.1f)
+            {
+                pos.x = 24.1; //this seems to work!
+            }
+            break;
+        }
     }
     if (event.type == SDL_KEYUP && event.key.repeat == 0) {
         switch (event.key.keysym.scancode) {
@@ -90,10 +104,6 @@ void PlayerBody::HandleEvents(const SDL_Event& event) {
             vel.x = 0.0f;
             break;
         }
-    }
-
-    if (VMath::mag(vel) > VERY_SMALL) {
-        vel = VMath::normalize(vel) * maxSpeed;
     }
 }
 void PlayerBody::Update( float deltaTime )

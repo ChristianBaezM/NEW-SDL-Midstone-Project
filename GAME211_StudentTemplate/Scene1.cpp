@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream> // Make sure to include iostream for std::cout
+#include <cstdlib>
 
 // See notes about this constructor in Scene1.h.
 Scene1::Scene1(SDL_Window* sdlWindow_, GameManager* game_) {
@@ -20,6 +21,7 @@ Scene1::~Scene1() {
 }
 
 bool Scene1::OnCreate() {
+	srand(time(0)); //this might cause a bug wiht the srandbellow!
 	srand(static_cast<unsigned>(time(NULL)));
 	int w;
 	int h;
@@ -100,6 +102,19 @@ bool Scene1::OnCreate() {
 
 		logs.push_back(new Log(renderer, "log.png", 0, lane * CELL_SIZE, speed, moveRight, logScale));
 	}
+	//spawns the nests and food
+	 
+	apple = new Food(Vec3(0, 0, 0), game);
+	apple->OnCreate();
+	//spawning the collectable food
+	spawnFood();
+	int startingX = 0;
+	int startingY = 40; // this value spawns the nest right on the line
+	for (int i = 0; i < numberOfNests; i++) {
+		Nest* nest = new Nest(Vec3(startingX + i * 144.5f, startingY, 0.0f), game);
+		nest->OnCreate();
+		nests.push_back(nest);
+	}
 
 	// Load power‑up textures
 	SDL_Surface* s = IMG_Load("freeze.png");
@@ -160,7 +175,7 @@ bool Scene1::OnCreate() {
 	// Initial lives
 	lives = 3;
 	// Reset timer
-	countdownTime = 50.0f;
+	countdownTime = 120.0f;
 
 	// Initial random spawn
 	spawnFreezePowerUp();
@@ -250,6 +265,30 @@ void Scene1::Update(const float deltaTime) {
 
 	SDL_Rect playerRect = game->getPlayerBody()->getRect(playerScale);
 
+	if (!apple->isCollected) {
+		if (SDL_HasIntersection(&playerRect, &apple->hitBox)) { // This is where the collision for the car is being checked and where i think i should tick down health
+			game->getPlayerBody()->setHasCollected(true);
+			std::cout << "Player has collected the apple";
+			apple->isCollected = true;
+
+		}
+	}
+	//This code is for spawning the nests
+	for (auto nest : nests) {
+		if (nest->disabled)
+			continue;
+		if (SDL_HasIntersection(&playerRect, &nest->hitBox)) {
+			if (game->getPlayerBody()->getHasCollected()) {
+				nest->disableNest();
+				srand(time(0));
+				spawnFood();
+				game->getPlayerBody()->setHasCollected(false);
+				game->collectApple();
+			}
+
+		}
+	}
+
 	for (auto car : cars) {
 		SDL_Rect carRect = car->getRectScaled();
 
@@ -259,8 +298,12 @@ void Scene1::Update(const float deltaTime) {
 			}
 			// Reset player to initial position - define as needed in game coords
 			game->PlayHitSfx();
-			Vec3 startPos = Vec3(12.5f, 0.5f, 0.0f);
+			Vec3 startPos = Vec3(11.6f, 0.5f, 0.0f);
 			game->getPlayerBody()->setPosition(startPos);
+			if (game->getPlayerBody()->getHasCollected()) {
+				spawnFood();
+			}
+			game->getPlayerBody()->setHasCollected(false);
 			game->getPlayerBody()->setVel(Vec3(0, 0, 0));
 			break;
 		}
@@ -326,8 +369,12 @@ void Scene1::Update(const float deltaTime) {
 
 	if (!onLog && SDL_HasIntersection(&playerRect, &riverBackgroundRect)) {
 		game->PlayHitSfx();
-		Vec3 startPos = Vec3(12.5f, 0.5f, 0.0f);
+		Vec3 startPos = Vec3(11.6f, 0.5f, 0.0f);
 		game->getPlayerBody()->setPosition(startPos);
+		if (game->getPlayerBody()->getHasCollected()) {
+			spawnFood();
+		}
+		game->getPlayerBody()->setHasCollected(false);
 		lives--;
 	}
 
@@ -477,6 +524,12 @@ void Scene1::Render() {
 		log->Render(renderer);
 	}
 
+	apple->render(renderer);
+
+	for (auto nest : nests) {
+		nest->render(renderer);
+	}
+
 	// render the player on top of the logs
 	game->RenderPlayer(0.10f); // this number scales the player sprite
 
@@ -486,4 +539,24 @@ void Scene1::HandleEvents(const SDL_Event& event)
 {
 	// send events to player as needed
 	game->getPlayerBody()->HandleEvents(event);
+
+	if (event.type == SDL_KEYDOWN)
+	{
+		switch (event.key.keysym.scancode)
+		{
+		case SDL_SCANCODE_2:
+			spawnFood();
+
+			break;
+		}
+	}
+
+}
+
+void Scene1::spawnFood() {
+	srand(time(0));
+	int X_Tile = rand() % 13;
+	int Y_Tile = rand() % (11 - 5 + 1) + 5; // this number makes it so that the apple cant spawn on the player row
+	apple->setPos(Vec3(X_Tile * 48, Y_Tile * 48, 0.0f));
+	apple->isCollected = false;
 }

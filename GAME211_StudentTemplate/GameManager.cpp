@@ -241,6 +241,16 @@ SDL_Renderer* GameManager::getRenderer()
     return renderer;
 }
 
+void GameManager::collectApple()
+{
+    applesCollected++;
+    if (applesCollected >= 5) {
+        std::cout << "YOU WIN";
+
+    }
+
+}
+
 // This might be unfamiliar
 void GameManager::RenderPlayer(float scale)
 {
