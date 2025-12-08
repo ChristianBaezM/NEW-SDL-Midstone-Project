@@ -2,6 +2,7 @@
 #include "MenuScene.h"
 #include "OptionScene.h"
 #include "Scene1.h"
+#include "WinScene.h"
 #include "GridSettings.h" // you added this
 
 GameManager::GameManager() {
@@ -246,6 +247,7 @@ void GameManager::collectApple()
     applesCollected++;
     if (applesCollected >= 5) {
         std::cout << "YOU WIN";
+        LoadScene(3);
 
     }
 
@@ -276,6 +278,9 @@ void GameManager::LoadScene( int i )
         break;
     case 2:
         currentScene = new OptionScene(windowPtr->GetSDL_Window(), this);
+        break;
+    case 3:
+        currentScene = new WinScene(windowPtr->GetSDL_Window(), this);
         break;
     }
 
