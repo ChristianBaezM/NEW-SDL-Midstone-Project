@@ -16,7 +16,8 @@ private:
 	SDL_Texture* bgTexture = nullptr;
 	SDL_Texture* backTexture = nullptr;
 
-	
+	SDL_Texture* musicTexture = nullptr;
+	SDL_Texture* sfxTexture = nullptr;
 	
 
 	bool backToMenu = false;
@@ -36,6 +37,9 @@ private:
 
 	SDL_Rect backRect{};
 	SDL_Rect bgRect{};
+
+	SDL_Rect musicRect;
+	SDL_Rect sfxRect;
 
 public:
 	OptionScene(SDL_Window* sdlWindow, GameManager* gm);

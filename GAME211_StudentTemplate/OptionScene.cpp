@@ -51,6 +51,22 @@ bool OptionScene::OnCreate() {
 	SDL_QueryTexture(backTexture, nullptr, nullptr, &bw, &bh);
 	backRect = { 300, 450, bw * 2, bh * 2 };
 
+	SDL_Surface* musicSurf = IMG_Load("MusicText.png");
+	if (!musicSurf) return false;
+	musicTexture = SDL_CreateTextureFromSurface(renderer, musicSurf);
+	SDL_FreeSurface(musicSurf);
+	if (!musicTexture) return false;
+
+
+	SDL_Surface* sfxSurf = IMG_Load("SFXText.png");
+	if (!sfxSurf) return false;
+	sfxTexture = SDL_CreateTextureFromSurface(renderer, sfxSurf);
+	SDL_FreeSurface(sfxSurf);
+	if (!sfxTexture) return false;
+
+	musicRect = { 225, 275, 100, 30 };
+	sfxRect = { 210 ,340, 100, 20 };
+
 	int barWidth = w / 3;
 	int barHeight = 8;
 
@@ -73,6 +89,14 @@ bool OptionScene::OnCreate() {
 void OptionScene::OnDestroy() {
 	if (bgTexture) SDL_DestroyTexture(bgTexture);
 	if (backTexture) SDL_DestroyTexture(backTexture);
+	if (musicTexture) {
+		SDL_DestroyTexture(musicTexture);
+		musicTexture = nullptr;
+	}
+	if (sfxTexture) {
+		SDL_DestroyTexture(sfxTexture);
+		sfxTexture = nullptr;
+	}
 }
 
 void OptionScene::HandleEvents(const SDL_Event& e) {
@@ -169,8 +193,14 @@ void OptionScene::Render() {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 
+	
+
 	//draw background
 	SDL_RenderCopy(renderer, bgTexture, nullptr, &bgRect);
+
+
+	SDL_RenderCopy(renderer, musicTexture, nullptr, &musicRect);
+	SDL_RenderCopy(renderer, sfxTexture, nullptr, &sfxRect);
 
 	//Render slider bar
 	SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
