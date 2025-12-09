@@ -27,6 +27,11 @@ bool Scene1::OnCreate() {
 	int h;
 	SDL_GetWindowSize(window, &w, &h);
 
+	/*std::cout << "Window size: " << w << "x" << h << "\n";
+	std::cout << "SCREEN_WIDTH: " << SCREEN_WIDTH << "\n";
+	std::cout << "GRID_COLS * CELL_SIZE: "
+		<< GRID_COLS * CELL_SIZE << "\n";*/
+
 	Matrix4 ndc = MMath::viewportNDC(w, h);
 	Matrix4 ortho = MMath::orthographic(0.0f, xAxis, 0.0f, yAxis, 0.0f, 1.0f);
 	projectionMatrix = ndc * ortho;
@@ -36,6 +41,16 @@ bool Scene1::OnCreate() {
 
 	SDL_Surface* image;
 	SDL_Texture* texture;
+
+	// Grass
+	SDL_Surface* grassSurface = IMG_Load("grass.png");
+	if (!grassSurface) {
+		std::cout << "Failed to load grass.png: " << IMG_GetError() << std::endl;
+	}
+	else {
+		grassTexture = SDL_CreateTextureFromSurface(renderer, grassSurface);
+		SDL_FreeSurface(grassSurface);
+	}
 
 	// Road
 	int laneCount = 4;
@@ -54,6 +69,7 @@ bool Scene1::OnCreate() {
 		backgroundTexture = SDL_CreateTextureFromSurface(renderer, bgSurface);
 		SDL_FreeSurface(bgSurface);
 	}
+
 	// River
 	int riverLaneCount = 4;
 	int riverStartLane = 3;
@@ -93,19 +109,20 @@ bool Scene1::OnCreate() {
 	// Logs
 	int logLanePositions[] = { 6, 5, 4, 3 };
 	int numLogs = 4;
-	float logScale = 2.0f;
+	float logTilesWide = 2.0f;
 
 	for (int i = 0; i < numLogs; i++) {
 		int lane = logLanePositions[i];
 		float speed = 100.0f + i * 15;
 		bool moveRight = (i % 2 == 0);
 
-		logs.push_back(new Log(renderer, "log.png", 0, lane * CELL_SIZE, speed, moveRight, logScale));
+		logs.push_back(new Log(renderer, "log.png", 0, lane * CELL_SIZE, speed, moveRight, logTilesWide));
 	}
+
 	//spawns the nests and food
-	 
 	apple = new Food(Vec3(0, 0, 0), game);
 	apple->OnCreate();
+
 	//spawning the collectable food
 	spawnFood();
 	int startingX = 0;
@@ -174,8 +191,9 @@ bool Scene1::OnCreate() {
 
 	// Initial lives
 	lives = 3;
+
 	// Reset timer
-	countdownTime = 1200.0f;
+	countdownTime = 300.0f;
 
 	// Initial random spawn
 	spawnFreezePowerUp();
@@ -186,6 +204,11 @@ bool Scene1::OnCreate() {
 
 
 void Scene1::OnDestroy() {
+	if (grassTexture) {
+		SDL_DestroyTexture(grassTexture);
+		grassTexture = nullptr;
+	}
+
 	if (backgroundTexture) {
 		SDL_DestroyTexture(backgroundTexture);
 		backgroundTexture = nullptr;
@@ -395,10 +418,12 @@ void Scene1::spawnFreezePowerUp() {
 	int maxY = (maxYlane + 1) * CELL_SIZE - 32; // 32 padding
 
 	int minX = 0;
-	int maxX = SCREEN_WIDTH - 32;
+	int maxX = SCREEN_WIDTH - CELL_SIZE;
 
-	freezeRect.w = 32;
-	freezeRect.h = 32;
+	int size = static_cast<int>(CELL_SIZE * powerupScale);
+
+	freezeRect.w = size;
+	freezeRect.h = size;
 	freezeRect.x = rand() % (SCREEN_WIDTH - 32);
 	freezeRect.y = (rand() % 8 + 3) * CELL_SIZE;
 
@@ -409,13 +434,15 @@ void Scene1::spawnExtraLifePowerUp() {
 	int minYlane = 3;
 	int maxYlane = 11;
 	int minY = minYlane * CELL_SIZE;
-	int maxY = (maxYlane + 1) * CELL_SIZE - 32;
+	int maxY = (maxYlane + 1) * CELL_SIZE - CELL_SIZE;
 
 	int minX = 0;
-	int maxX = SCREEN_WIDTH - 32;
+	int maxX = SCREEN_WIDTH - CELL_SIZE;
 
-	extraLifeRect.w = 32;
-	extraLifeRect.h = 32;
+	int size = static_cast<int>(CELL_SIZE * powerupScale);
+
+	extraLifeRect.w = size;
+	extraLifeRect.h = size;
 	extraLifeRect.x = minX + rand() % (maxX - minX + 1);
 	extraLifeRect.y = minY + rand() % (maxY - minY + 1);
 
@@ -432,6 +459,9 @@ void Scene1::RenderText(std::string text, int x, int y, float scale) {
 	int scaledWidth = static_cast<int>(DIGIT_SRC_WIDTH * scale);
 	int scaledHeight = static_cast<int>(DIGIT_SRC_HEIGHT * scale);
 
+	// small “bold” offset in pixels
+	const int boldOffset = 1;
+
 	for (char const& c : text) {
 		size_t charIndex = charMap.find(c);
 
@@ -444,6 +474,13 @@ void Scene1::RenderText(std::string text, int x, int y, float scale) {
 
 			SDL_Rect destRect = { currentX, y, scaledWidth, scaledHeight };
 			SDL_RenderCopy(renderer, digitsTexture, &srcRect, &destRect);
+
+			destRect.x = currentX + boldOffset;
+			SDL_RenderCopy(renderer, digitsTexture, &srcRect, &destRect);
+
+			destRect.x = currentX;
+			destRect.y = y + boldOffset;
+			SDL_RenderCopy(renderer, digitsTexture, &srcRect, &destRect);
 		}
 
 		currentX += scaledWidth; // Move to the next position
@@ -451,8 +488,31 @@ void Scene1::RenderText(std::string text, int x, int y, float scale) {
 }
 
 void Scene1::Render() {
-	SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255); // Green for grass
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Green for grass
 	SDL_RenderClear(renderer);
+
+	// grass background
+	if (grassTexture) {
+		// Example: full grid, or restrict to grass-only rows
+		for (int row = 1; row < GRID_ROWS; ++row) {
+			// Skip road and river rows if you want:
+			// road: lanes 8–11, river: 3–6 (adjust to your layout)
+			if (row >= 3 && row <= 6) continue;  // river
+			if (row >= 8 && row <= 11) continue; // road
+
+			for (int col = 0; col < GRID_COLS; ++col) {
+				SDL_Rect dst;
+				dst.x = col * CELL_SIZE;
+				dst.y = row * CELL_SIZE;
+				dst.w = CELL_SIZE;
+				dst.h = CELL_SIZE;
+
+				// Source is full 16x16 image
+				SDL_Rect src{ 0, 0, 16, 16 };
+				SDL_RenderCopy(renderer, grassTexture, &src, &dst);
+			}
+		}
+	}
 
 	// customized road rendering
 	if (backgroundTexture) {
@@ -461,7 +521,25 @@ void Scene1::Render() {
 
 	// customized river rendering
 	if (riverTexture) {
-		SDL_RenderCopy(renderer, riverTexture, nullptr, &riverBackgroundRect);
+		int riverStartRow = 3;          // same as riverStartLane
+		int riverRowCount = 4;          // same as riverLaneCount
+		int riverEndRow = riverStartRow + riverRowCount - 1;
+
+		for (int row = riverStartRow; row <= riverEndRow; ++row) {
+			for (int col = 0; col < GRID_COLS; ++col) {
+				SDL_Rect dst;
+				dst.x = col * CELL_SIZE;
+				dst.y = row * CELL_SIZE;
+				dst.w = CELL_SIZE;
+				dst.h = CELL_SIZE;
+
+				SDL_RenderCopy(renderer, riverTexture, nullptr, &dst);
+
+				// If river.png is smaller (e.g. 16x16), you can explicitly set src:
+				// SDL_Rect src{0, 0, 16, 16};
+				// SDL_RenderCopy(renderer, riverTexture, &src, &dst);
+			}
+		}
 	}
 
 	// Hearts UI
@@ -535,6 +613,7 @@ void Scene1::Render() {
 
 	SDL_RenderPresent(renderer);
 }
+
 void Scene1::HandleEvents(const SDL_Event& event)
 {
 	// send events to player as needed

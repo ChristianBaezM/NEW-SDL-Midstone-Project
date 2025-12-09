@@ -1,7 +1,8 @@
 #include "Log.h"
+#include "GridSettings.h" 
 
-Log::Log(SDL_Renderer* renderer, const char* imagePath, int x, int y, float speed, bool moveRight, float scale)
-    : speed(speed), moveRight(moveRight), scale(scale) {
+Log::Log(SDL_Renderer* renderer, const char* imagePath, int x, int y, float speed, bool moveRight, float tilesWide)
+    : speed(speed), moveRight(moveRight), tilesWide(tilesWide) {
     SDL_Surface* surface = IMG_Load(imagePath);
     texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
@@ -33,15 +34,29 @@ void Log::Update(float deltaTime, int screenWidth) {
 }
 
 void Log::Render(SDL_Renderer* renderer) {
-    SDL_Rect scaledRect = getRectScaled();
-    SDL_RenderCopy(renderer, texture, NULL, &scaledRect);
+    /*SDL_Rect scaledRect = getRectScaled();
+    SDL_RenderCopy(renderer, texture, NULL, &scaledRect);*/
+
+    if (!texture) return;
+
+    SDL_Rect src{ 0, 0, rect.w, rect.w }; // full 16x16 texture
+
+    for (int i = 0; i < tilesWide; ++i) {
+        SDL_Rect dst;
+        dst.x = rect.x + i * CELL_SIZE;
+        dst.y = rect.y;
+        dst.w = CELL_SIZE;   // bigger than 16
+        dst.h = CELL_SIZE;
+
+        SDL_RenderCopy(renderer, texture, &src, &dst);
+    }
 }
 
 SDL_Rect Log::getRectScaled() const {
-    SDL_Rect scaledRect;
-    scaledRect.w = static_cast<int>(rect.w * scale);
-    scaledRect.h = static_cast<int>(rect.h * scale);
-    scaledRect.x = rect.x;
-    scaledRect.y = rect.y;
-    return scaledRect;
+    SDL_Rect r;
+    r.x = rect.x;
+    r.y = rect.y;
+    r.w = tilesWide * CELL_SIZE;  // full visual width
+    r.h = CELL_SIZE;              // full visual height
+    return r;
 }

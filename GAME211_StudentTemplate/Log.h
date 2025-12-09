@@ -8,10 +8,10 @@ private:
     SDL_Rect rect;
     float speed;
     bool moveRight;
-    float scale;
+    float tilesWide;
 
 public:
-    Log(SDL_Renderer* renderer, const char* imagePath, int x, int y, float speed, bool moveRight, float scale);
+    Log(SDL_Renderer* renderer, const char* imagePath, int x, int y, float speed, bool moveRight, float tilesWide);
     ~Log();
 
     void Update(float deltaTime, int screenWidth);

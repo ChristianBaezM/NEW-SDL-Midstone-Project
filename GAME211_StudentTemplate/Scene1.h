@@ -31,11 +31,16 @@ private:
 	SDL_Texture* riverTexture = nullptr;
 	SDL_Rect riverBackgroundRect;
 
+	// Grass
+	SDL_Texture* grassTexture = nullptr;
+	SDL_Rect grassRect{};
+	
 	// Power‑ups
 	SDL_Texture* freezeTexture = nullptr;
 	SDL_Texture* extraLifeTexture = nullptr;
 	SDL_Rect freezeRect{};
 	SDL_Rect extraLifeRect{};
+	float powerupScale = 0.80f;
 	bool freezeActive = false;
 	bool extraLifeActive = false;
 

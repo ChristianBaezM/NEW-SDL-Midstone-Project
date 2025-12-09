@@ -15,7 +15,7 @@ public:
 	SDL_Texture* texture;
 	SDL_Rect hitBox;
 	class GameManager* game;
-	float scale = 3.0f;
+	float scale = 2.5f;
 
 	//public :
 		//collistion method
